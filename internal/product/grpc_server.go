@@ -66,34 +66,36 @@ func NewGRPCServer(cfg Config) (*grpc.Server, error) {
   //return grpcServer, nil
 }
 
-func (s *ServiceServer) CreateProduct(_ context.Context, req *pb.CreateProductRequest) (*pb.CreateProductResponse, error) {
+func (s *ServiceServer) CreateProduct(ctx context.Context, req *pb.CreateProductRequest) (*pb.CreateProductResponse, error) {
   var product models.Product
 
   product.Name = req.Name
   product.Stock = req.Stock
   product.Price = req.Price
 
-  if result := s.cfg.ReadWriteDB().Create(&product); result.Error != nil {
+  newProduct, err := s.cfg.ProductRepo().CreateProduct(ctx, &product)
+  if err != nil {
     return &pb.CreateProductResponse{
       Status: http.StatusConflict,
-      Error:  result.Error.Error(),
-    }, nil
+      Error:  err.Error(),
+    }, err
   }
 
   return &pb.CreateProductResponse{
     Status: http.StatusCreated,
-    Id:     product.Id,
+    Id:     newProduct.Id,
   }, nil
 }
 
-func (s *ServiceServer) FindOne(_ context.Context, req *pb.FindOneRequest) (*pb.FindOneResponse, error) {
-  var product models.Product
+func (s *ServiceServer) FindOne(ctx context.Context, req *pb.FindOneRequest) (*pb.FindOneResponse, error) {
 
-  if result := s.cfg.ReadOnlyDB().First(&product, req.Id); result.Error != nil {
+  productID := req.Id
+  product, err := s.cfg.ProductRepo().GetProductByID(ctx, productID)
+  if err != nil {
     return &pb.FindOneResponse{
       Status: http.StatusNotFound,
-      Error:  result.Error.Error(),
-    }, nil
+      Error:  err.Error(),
+    }, err
   }
 
   data := &pb.FindOneData{
@@ -109,14 +111,13 @@ func (s *ServiceServer) FindOne(_ context.Context, req *pb.FindOneRequest) (*pb.
   }, nil
 }
 
-func (s *ServiceServer) DecreaseStock(_ context.Context, req *pb.DecreaseStockRequest) (*pb.DecreaseStockResponse, error) {
-  var product models.Product
-
-  if result := s.cfg.ReadOnlyDB().First(&product, req.Id); result.Error != nil {
+func (s *ServiceServer) DecreaseStock(ctx context.Context, req *pb.DecreaseStockRequest) (*pb.DecreaseStockResponse, error) {
+  product, err := s.cfg.ProductRepo().GetProductByID(ctx, req.Id)
+  if err != nil {
     return &pb.DecreaseStockResponse{
       Status: http.StatusNotFound,
-      Error:  result.Error.Error(),
-    }, nil
+      Error:  err.Error(),
+    }, err
   }
 
   if product.Stock <= 0 {
@@ -126,23 +127,33 @@ func (s *ServiceServer) DecreaseStock(_ context.Context, req *pb.DecreaseStockRe
     }, nil
   }
 
-  var log models.StockDecreaseLog
-
-  if result := s.cfg.ReadOnlyDB().Where(&models.StockDecreaseLog{OrderId: req.OrderId}).First(&log); result.Error == nil {
+  log, err := s.cfg.ProductRepo().GetStockLog(ctx, req.OrderId)
+  if err != nil {
     return &pb.DecreaseStockResponse{
-      Status: http.StatusConflict,
+      Status: http.StatusInternalServerError,
       Error:  "Stock already decreased",
-    }, nil
+    }, err
   }
 
   product.Stock = product.Stock - 1
 
-  s.cfg.ReadWriteDB().Save(&product)
+  _, err = s.cfg.ProductRepo().UpdateProduct(ctx, product)
+  if err != nil {
+    return &pb.DecreaseStockResponse{
+      Status: http.StatusInternalServerError,
+      Error:  "Failed to update product",
+    }, err
+  }
 
   log.OrderId = req.OrderId
   log.ProductRefer = product.Id
-
-  s.cfg.ReadWriteDB().Create(&log)
+  _, err = s.cfg.ProductRepo().UpdateStockLog(ctx, log)
+  if err != nil {
+    return &pb.DecreaseStockResponse{
+      Status: http.StatusInternalServerError,
+      Error:  "Failed to update StockDecreaseLog",
+    }, err
+  }
 
   return &pb.DecreaseStockResponse{
     Status: http.StatusOK,
