@@ -1,0 +1,46 @@
+version: "3.8"
+
+services:
+  auth-service-db:
+    image: postgres:13.2-alpine
+    container_name: auth-db
+    environment:
+      - POSTGRES_DB=grpc-auth
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=mysecretpassword
+    ports:
+      - 5433:5432
+    expose:
+      - 5433
+    networks:
+      - grpc-auth
+  order-service-db:
+    image: postgres:13.2-alpine
+    container_name: order-db
+    environment:
+      - POSTGRES_DB=grpc-order
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=mysecretpassword
+    ports:
+      - 5434:5432
+    expose:
+      - 5434
+    networks:
+      - grpc-order
+  product-service-db:
+    image: postgres:13.2-alpine
+    container_name: product-db
+    environment:
+      - POSTGRES_DB=grpc-product
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=mysecretpassword
+    ports:
+      - 5435:5432
+    expose:
+      - 5435
+    networks:
+      - grpc-product
+networks:
+  grpc-auth:
+  grpc-order:
+  grpc-product:
