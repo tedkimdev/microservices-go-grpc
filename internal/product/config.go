@@ -1,21 +1,24 @@
 package product
 
-import "gorm.io/gorm"
+import (
+  "github.com/tedkimdev/microservices-go-grpc/internal/repo"
+  "gorm.io/gorm"
+)
 
 type Config interface {
   ReadOnlyDB() *gorm.DB
   ReadWriteDB() *gorm.DB
-  ProductRepo() Repository
+  ProductRepo() repo.ProductRepository
 }
 
 type config struct {
   Config
-  readOnlyDB *gorm.DB
+  readOnlyDB  *gorm.DB
   readWriteDB *gorm.DB
-  productRepo Repository
+  productRepo repo.ProductRepository
 }
 
-func NewConfig(readOnlyDB *gorm.DB, readWriteDB *gorm.DB, productRepo Repository) Config {
+func NewConfig(readOnlyDB *gorm.DB, readWriteDB *gorm.DB, productRepo repo.ProductRepository) Config {
   return &config{
     readOnlyDB: readOnlyDB,
     readWriteDB: readWriteDB,
@@ -29,6 +32,6 @@ func (c *config) ReadOnlyDB() *gorm.DB {
 func (c *config) ReadWriteDB() *gorm.DB {
   return c.readWriteDB
 }
-func (c *config) ProductRepo() Repository {
+func (c *config) ProductRepo() repo.ProductRepository {
   return c.productRepo
 }

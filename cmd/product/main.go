@@ -2,6 +2,7 @@ package main
 
 import (
   "fmt"
+  "github.com/tedkimdev/microservices-go-grpc/internal/repo"
   "log"
   "net"
 
@@ -31,7 +32,7 @@ func main() {
   }
   fmt.Println("Product Service on", envConfig.Port)
 
-  pr := product.NewRepository(readOnlyDB, nil)
+  pr := repo.NewRepository(readOnlyDB, nil)
   cfg := product.NewConfig(readOnlyDB, nil, pr)
   grpcServer, err := product.NewGRPCServer(cfg)
 

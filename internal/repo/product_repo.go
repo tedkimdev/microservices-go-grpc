@@ -1,4 +1,4 @@
-package product
+package repo
 
 import (
   "context"
@@ -6,7 +6,7 @@ import (
   "gorm.io/gorm"
 )
 
-type Repository interface {
+type ProductRepository interface {
   CreateProduct(_ context.Context, product *models.Product) (*models.Product, error)
   GetProductByID(_ context.Context, id int64) (*models.Product, error)
   UpdateProduct(_ context.Context, product *models.Product) (*models.Product, error)
@@ -15,7 +15,7 @@ type Repository interface {
   UpdateStockLog(_ context.Context, stockLog *models.StockDecreaseLog) (*models.StockDecreaseLog, error)
 }
 
-type repository struct {
+type productRepository struct {
   readOnlyDB *gorm.DB
   readWriteDB *gorm.DB
 }
@@ -23,14 +23,14 @@ type repository struct {
 func NewRepository(
   readOnlyDB *gorm.DB,
   readWriteDB *gorm.DB,
-) Repository {
-  return &repository{
+) ProductRepository {
+  return &productRepository{
     readOnlyDB:  readOnlyDB,
     readWriteDB: readWriteDB,
   }
 }
 
-func (r *repository) GetStockLog(_ context.Context, orderId int64) (*models.StockDecreaseLog, error) {
+func (r *productRepository) GetStockLog(_ context.Context, orderId int64) (*models.StockDecreaseLog, error) {
   var log models.StockDecreaseLog
   if result := r.readOnlyDB.Where(&models.StockDecreaseLog{OrderId: orderId}).First(&log); result.Error == nil {
     return nil, result.Error
@@ -38,14 +38,14 @@ func (r *repository) GetStockLog(_ context.Context, orderId int64) (*models.Stoc
   return &log, nil
 }
 
-func (r *repository) CreateProduct(_ context.Context, product *models.Product) (*models.Product, error) {
+func (r *productRepository) CreateProduct(_ context.Context, product *models.Product) (*models.Product, error) {
   if result := r.readWriteDB.Create(&product); result.Error != nil {
     return nil, result.Error
   }
   return product, nil
 }
 
-func (r *repository) GetProductByID(_ context.Context, id int64) (*models.Product, error) {
+func (r *productRepository) GetProductByID(_ context.Context, id int64) (*models.Product, error) {
   var product models.Product
   if result := r.readOnlyDB.First(&product, id); result.Error != nil {
     return nil, result.Error
@@ -53,14 +53,14 @@ func (r *repository) GetProductByID(_ context.Context, id int64) (*models.Produc
   return &product, nil
 }
 
-func (r *repository) UpdateProduct(_ context.Context, product *models.Product) (*models.Product, error) {
+func (r *productRepository) UpdateProduct(_ context.Context, product *models.Product) (*models.Product, error) {
   if result := r.readWriteDB.Save(product); result.Error != nil {
     return nil, result.Error
   }
   return product, nil
 }
 
-func (r *repository) UpdateStockLog(_ context.Context, stockLog *models.StockDecreaseLog) (*models.StockDecreaseLog, error) {
+func (r *productRepository) UpdateStockLog(_ context.Context, stockLog *models.StockDecreaseLog) (*models.StockDecreaseLog, error) {
   if result := r.readWriteDB.Save(stockLog); result.Error != nil {
     return nil, result.Error
   }
