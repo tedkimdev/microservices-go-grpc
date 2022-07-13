@@ -32,7 +32,7 @@ func main() {
   }
   fmt.Println("Product Service on", envConfig.Port)
 
-  pr := repo.NewRepository(readOnlyDB, nil)
+  pr := repo.NewProductRepository(readOnlyDB, nil)
   cfg := product.NewConfig(readOnlyDB, nil, pr)
   grpcServer, err := product.NewGRPCServer(cfg)
 

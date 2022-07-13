@@ -2,13 +2,14 @@ package auth_svc
 
 import "github.com/spf13/viper"
 
-type Config struct {
+type EnvConfig struct {
   Port         string `mapstructure:"PORT"`
-  DBUrl        string `mapstructure:"DB_URL"`
+  ReadOnlyDBURL        string `mapstructure:"READ_ONLY_DB_URL"`
+  ReadWriteDBURL        string `mapstructure:"READ_WRITE_DB_URRL"`
   JWTSecretKey string `mapstructure:"JWT_SECRET_KEY"`
 }
 
-func LoadConfig() (config Config, err error) {
+func LoadEnvConfig() (config EnvConfig, err error) {
   viper.AddConfigPath("./pkg/config/auth_svc")
   viper.SetConfigName("dev")
   viper.SetConfigType("env")

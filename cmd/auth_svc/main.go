@@ -2,6 +2,7 @@ package main
 
 import (
   "fmt"
+  "github.com/tedkimdev/microservices-go-grpc/internal/repo"
   "github.com/tedkimdev/microservices-go-grpc/pkg/database"
   "log"
   "net"
@@ -9,40 +10,35 @@ import (
   "github.com/tedkimdev/microservices-go-grpc/internal/auth"
   config "github.com/tedkimdev/microservices-go-grpc/pkg/config/auth_svc"
   "github.com/tedkimdev/microservices-go-grpc/pkg/utils"
-  pb "github.com/tedkimdev/microservices-go-grpc/proto/v1/auth"
-  "google.golang.org/grpc"
 )
 
 func main() {
-  c, err := config.LoadConfig()
+  envConfig, err := config.LoadEnvConfig()
   if err != nil {
     log.Fatalln("Failed at config", err)
   }
 
-  db, err := database.NewDatabase(c.DBUrl)
+  db, err := database.NewDatabase(envConfig.ReadOnlyDBURL)
   if err != nil {
     log.Fatalln("Failed to connect database", err)
   }
 
   jwt := utils.JwtWrapper{
-    SecretKey:       c.JWTSecretKey,
+    SecretKey:       envConfig.JWTSecretKey,
     Issuer:          "go-grpc-auth-svc",
     ExpirationHours: 24 * 365,
   }
 
-  lis, err := net.Listen("tcp", c.Port)
+  lis, err := net.Listen("tcp", envConfig.Port)
 
   if err != nil {
     log.Fatalln("Failed to listing:", err)
   }
+  fmt.Println("Auth Svc on", envConfig.Port)
 
-  fmt.Println("Auth Svc on", c.Port)
-
-  s := auth.NewServiceServer(db, jwt)
-
-  grpcServer := grpc.NewServer()
-
-  pb.RegisterAuthServiceServer(grpcServer, s)
+  ar := repo.NewAuthRepository(db, nil)
+  cfg := auth.NewConfig(db, nil, ar, &jwt)
+  grpcServer, err := auth.NewGRPCServer(cfg)
 
   if err := grpcServer.Serve(lis); err != nil {
     log.Fatalln("Failed to serve:", err)

@@ -20,7 +20,7 @@ type productRepository struct {
   readWriteDB *gorm.DB
 }
 
-func NewRepository(
+func NewProductRepository(
   readOnlyDB *gorm.DB,
   readWriteDB *gorm.DB,
 ) ProductRepository {
@@ -32,7 +32,7 @@ func NewRepository(
 
 func (r *productRepository) GetStockLog(_ context.Context, orderId int64) (*models.StockDecreaseLog, error) {
   var log models.StockDecreaseLog
-  if result := r.readOnlyDB.Where(&models.StockDecreaseLog{OrderId: orderId}).First(&log); result.Error == nil {
+  if result := r.readOnlyDB.Where(&models.StockDecreaseLog{OrderId: orderId}).First(&log); result.Error != nil {
     return nil, result.Error
   }
   return &log, nil
