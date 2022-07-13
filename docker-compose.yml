@@ -40,6 +40,25 @@ services:
       - 5435
     networks:
       - grpc-product
+  auth-service:
+    container_name: auth-service
+    build:
+      context: .
+      dockerfile: Dockerfile.auth.dev
+#      context: ./docker/auth_service
+#      dockerfile: Dockerfile.dev
+    ports:
+      - "50051:50051"
+    depends_on:
+      - auth-service-db
+    networks:
+      - grpc-auth
+#    environment:
+#      - SERVER_PORT=:5000
+#      - GRPC_PORT=:5007
+#      - NATS_CLIENT_ID=microservice_a
+#      - CLUSTER_ID=microservice
+#      - METRICS_PORT=:7070
 networks:
   grpc-auth:
   grpc-order:

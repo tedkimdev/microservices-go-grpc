@@ -17,7 +17,6 @@ func main() {
   if err != nil {
     log.Fatalln("Failed at config", err)
   }
-
   db, err := database.NewDatabase(envConfig.ReadOnlyDBURL)
   if err != nil {
     log.Fatalln("Failed to connect database", err)
